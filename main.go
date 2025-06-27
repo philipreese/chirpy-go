@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"net/http"
 	"sync/atomic"
@@ -20,9 +19,9 @@ func main() {
 
 	mux := http.NewServeMux()
 	mux.Handle("/app/", apiCfg.middlewareMetricsInc(http.StripPrefix("/app", http.FileServer(http.Dir(filePathRoot)))))
-	mux.HandleFunc("/healthz", handlerReadiness)
-	mux.HandleFunc("/metrics", apiCfg.handlerMetrics)
-	mux.HandleFunc("/reset", apiCfg.handlerReset)
+	mux.HandleFunc("GET /healthz", handlerReadiness)
+	mux.HandleFunc("GET /metrics", apiCfg.handlerMetrics)
+	mux.HandleFunc("POST /reset", apiCfg.handlerReset)
 
 	server := &http.Server{
 		Handler: mux,
@@ -31,17 +30,4 @@ func main() {
 
 	log.Printf("Serving files from %s on port: %s\n", filePathRoot, port)
 	log.Fatal(server.ListenAndServe())
-}
-
-func (cfg *apiConfig) handlerMetrics(writer http.ResponseWriter, req *http.Request) {
-	writer.Header().Add("Content-Type", "text/plain; charset=utf-8")
-	writer.WriteHeader(http.StatusOK)
-	writer.Write(fmt.Appendf(nil, "Hits: %d", cfg.fileserverHits.Load()))
-}
-
-func (cfg *apiConfig) middlewareMetricsInc(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		cfg.fileserverHits.Add(1)
-		next.ServeHTTP(w, r)
-	})
 }
