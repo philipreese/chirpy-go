@@ -15,15 +15,18 @@ import (
 type apiConfig struct {
 	fileserverHits atomic.Int32
 	db             *database.Queries
+	platform       string
 }
 
 func main() {
-
 	const filePathRoot = "."
 	const port = "8080"
+
+	dbQueries, platform := loadConfig()
 	apiCfg := apiConfig{
 		fileserverHits: atomic.Int32{},
-		db:             loadDatabase(),
+		db:             dbQueries,
+		platform:       platform,
 	}
 
 	mux := http.NewServeMux()
@@ -31,6 +34,7 @@ func main() {
 	
 	mux.HandleFunc("GET /api/healthz", handlerReadiness)
 	mux.HandleFunc("POST /api/validate_chirp", handlerValidateChirp)
+	mux.HandleFunc("POST /api/users", apiCfg.handlerCreateUser)
 	
 	mux.HandleFunc("POST /admin/reset", apiCfg.handlerReset)
 	mux.HandleFunc("GET /admin/metrics", apiCfg.handlerMetrics)
@@ -44,15 +48,19 @@ func main() {
 	log.Fatal(server.ListenAndServe())
 }
 
-func loadDatabase() (dbQueries *database.Queries) {
+func loadConfig() (dbQueries *database.Queries, platform string) {
 	godotenv.Load()
 	dbURL := os.Getenv("DB_URL")
 	if dbURL == "" {
 		log.Fatal("DB_URL environment variable is not set")
 	}
+	platform = os.Getenv("PLATFORM")
+	if platform == "" {
+		log.Fatal("PLATFORM environment variable is not set")
+	}
 	
 	db, err := sql.Open("postgres", dbURL); if err != nil {
 		log.Fatalf("Failed to connect to database: %v", err)
 	}
-	return database.New(db)
+	return database.New(db), platform
 }
