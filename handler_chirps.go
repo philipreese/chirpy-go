@@ -55,6 +55,27 @@ func (cfg *apiConfig) handlerCreateChirp(writer http.ResponseWriter, req *http.R
 	})
 }
 
+func (cfg *apiConfig) handlerGetChirps(writer http.ResponseWriter, req *http.Request) {
+	dbChirps, err := cfg.db.GetChirps(req.Context())
+	if err != nil {
+		respondWithError(writer, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	chirps := []Chirp{}
+	for _, dbChirp := range dbChirps {
+		chirps = append(chirps, Chirp{
+			ID: dbChirp.ID,
+			CreatedAt: dbChirp.CreatedAt,
+			UpdatedAt: dbChirp.UpdatedAt,
+			Body: dbChirp.Body,
+			UserID: dbChirp.UserID,
+		})
+	}
+	
+	respondWithJSON(writer, http.StatusOK, chirps)
+}
+
 func getCleanedBody(text string) string {
 	profanityList := []string{"kerfuffle", "sharbert", "fornax"}
 	words := strings.Split(text, " ")
