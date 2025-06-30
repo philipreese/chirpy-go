@@ -1,2 +1,4 @@
 out
 *.http
+.env
+chirpy-go
