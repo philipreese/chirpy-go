@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"net/http"
+	"strings"
 )
 
 func handlerValidateChirp(writer http.ResponseWriter, req *http.Request) {
@@ -10,10 +11,8 @@ func handlerValidateChirp(writer http.ResponseWriter, req *http.Request) {
 		Body string `json:"body"`
 	}
 	type chirpValidResponse struct {
-		Valid bool `json:"valid"`
+		CleanedBody string `json:"cleaned_body"`
 	}
-
-	writer.Header().Set("Content-Type", "application/json")
 
 	decoder := json.NewDecoder(req.Body)
 	var chirpReq chirpRequest
@@ -23,11 +22,24 @@ func handlerValidateChirp(writer http.ResponseWriter, req *http.Request) {
 	}
 
 	var chirpResp chirpValidResponse
-	chirpResp.Valid = len(chirpReq.Body) <= 400
-	if !chirpResp.Valid {
+	lengthValid := len(chirpReq.Body) <= 400
+	if !lengthValid {
 		respondWithError(writer, http.StatusBadRequest, "Chirp is too long")
 		return
 	}
-
+	chirpResp.CleanedBody = getCleanedBody(chirpReq.Body)
 	respondWithJSON(writer, http.StatusOK, chirpResp)
+}
+
+func getCleanedBody(text string) string {
+	profanityList := []string{"kerfuffle", "sharbert", "fornax"}
+	words := strings.Split(text, " ")
+	for i, word := range(words) {
+		for _, profanity := range profanityList {
+			if strings.ToLower(word) == profanity {
+				words[i] = "****"
+			}
+		}
+	}
+	return strings.Join(words, " ")
 }
