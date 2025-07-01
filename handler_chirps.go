@@ -27,7 +27,7 @@ func (cfg *apiConfig) handlerCreateChirp(writer http.ResponseWriter, req *http.R
 	decoder := json.NewDecoder(req.Body)
 	var chirpReq chirpRequest
 	if err := decoder.Decode(&chirpReq); err != nil {
-		respondWithError(writer, http.StatusInternalServerError, err.Error())
+		respondWithError(writer, http.StatusInternalServerError, "Couldn't decode parameters: " + err.Error())
 		return
 	}
 
@@ -42,7 +42,7 @@ func (cfg *apiConfig) handlerCreateChirp(writer http.ResponseWriter, req *http.R
 		UserID: chirpReq.UserID,
 	})
 	if err != nil {
-		respondWithError(writer, http.StatusInternalServerError, err.Error())
+		respondWithError(writer, http.StatusInternalServerError, "Couldn't create chirp: " + err.Error())
 		return
 	}
 
@@ -58,7 +58,7 @@ func (cfg *apiConfig) handlerCreateChirp(writer http.ResponseWriter, req *http.R
 func (cfg *apiConfig) handlerGetChirps(writer http.ResponseWriter, req *http.Request) {
 	dbChirps, err := cfg.db.GetChirps(req.Context())
 	if err != nil {
-		respondWithError(writer, http.StatusInternalServerError, err.Error())
+		respondWithError(writer, http.StatusInternalServerError, "Couldn't retrieve chirps: " + err.Error())
 		return
 	}
 
@@ -79,13 +79,13 @@ func (cfg *apiConfig) handlerGetChirps(writer http.ResponseWriter, req *http.Req
 func (cfg *apiConfig) handlerGetChirpByID(writer http.ResponseWriter, req *http.Request) {
 	chirpID, err := uuid.Parse(req.PathValue("chirpID"))
 	if err != nil {
-		respondWithError(writer, http.StatusInternalServerError, err.Error())
+		respondWithError(writer, http.StatusBadRequest, "Invalid chirp ID: " + err.Error())
 		return
 	}
 
 	dbChirp, err := cfg.db.GetChirpByID(req.Context(), chirpID)
 	if err != nil {
-		respondWithError(writer, http.StatusInternalServerError, err.Error())
+		respondWithError(writer, http.StatusNotFound, "Couldn't get chirp: " + err.Error())
 		return
 	}
 
