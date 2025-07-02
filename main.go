@@ -16,18 +16,14 @@ type apiConfig struct {
 	fileserverHits atomic.Int32
 	db             *database.Queries
 	platform       string
+	tokenSecret    string
 }
 
 func main() {
 	const filePathRoot = "."
 	const port = "8080"
 
-	dbQueries, platform := loadConfig()
-	apiCfg := apiConfig{
-		fileserverHits: atomic.Int32{},
-		db:             dbQueries,
-		platform:       platform,
-	}
+	apiCfg := loadConfig()
 
 	mux := http.NewServeMux()
 	mux.Handle("/app/", apiCfg.middlewareMetricsInc(http.StripPrefix("/app", http.FileServer(http.Dir(filePathRoot)))))
@@ -54,19 +50,37 @@ func main() {
 	log.Fatal(server.ListenAndServe())
 }
 
-func loadConfig() (dbQueries *database.Queries, platform string) {
+func loadConfig() (cfg *apiConfig) {
 	godotenv.Load()
+
 	dbURL := os.Getenv("DB_URL")
 	if dbURL == "" {
 		log.Fatal("DB_URL environment variable is not set")
+		return nil
 	}
-	platform = os.Getenv("PLATFORM")
+
+	platform := os.Getenv("PLATFORM")
 	if platform == "" {
 		log.Fatal("PLATFORM environment variable is not set")
+		return nil
+	}
+
+	tokenSecret := os.Getenv("JWT_SECRET")
+	if tokenSecret == "" {
+		log.Fatal("JWT_SECRET environment variable is not set")
+		return nil
 	}
 	
 	db, err := sql.Open("postgres", dbURL); if err != nil {
 		log.Fatalf("Failed to connect to database: %v", err)
 	}
-	return database.New(db), platform
+
+	apiCfg := apiConfig{
+		fileserverHits: atomic.Int32{},
+		db: database.New(db),
+		platform: platform,
+		tokenSecret: tokenSecret,
+	}
+
+	return &apiCfg
 }
