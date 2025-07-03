@@ -115,6 +115,45 @@ func (cfg *apiConfig) handlerGetChirpByID(writer http.ResponseWriter, req *http.
 	})
 }
 
+func (cfg *apiConfig) handlerDeleteChirp(writer http.ResponseWriter, req *http.Request) {
+	chirpID, err := uuid.Parse(req.PathValue("chirpID"))
+	if err != nil {
+		respondWithError(writer, http.StatusBadRequest, "Invalid chirp ID: " + err.Error())
+		return
+	}
+
+	tokenString, err := auth.GetBearerToken(req.Header)
+	if err != nil {
+		respondWithError(writer, http.StatusUnauthorized, "Couldn't get bearer token: " + err.Error())
+		return
+	}
+
+	userID, err := auth.ValidateJWT(tokenString, cfg.tokenSecret)
+	if err != nil {
+		respondWithError(writer, http.StatusUnauthorized, "Couldn't validate JWT: " + err.Error())
+		return
+	}
+
+	chirp, err := cfg.db.GetChirpByID(req.Context(), chirpID)
+	if err != nil {
+		respondWithError(writer, http.StatusNotFound, "Couldn't get chirp: " + err.Error())
+		return
+	}
+
+	if chirp.UserID != userID {
+		respondWithError(writer, http.StatusForbidden, "Not authorized to delete chirp")
+		return
+	}
+
+	err = cfg.db.DeleteChirp(req.Context(), chirpID)	
+	if err != nil {
+		respondWithError(writer, http.StatusInternalServerError, "Couldn't delete chirp: " + err.Error())
+		return
+	}
+
+	respondWithJSON(writer, http.StatusNoContent, nil)
+}
+
 func getCleanedBody(text string) string {
 	profanityList := []string{"kerfuffle", "sharbert", "fornax"}
 	words := strings.Split(text, " ")
