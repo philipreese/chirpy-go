@@ -151,7 +151,7 @@ func (cfg *apiConfig) handlerDeleteChirp(writer http.ResponseWriter, req *http.R
 		return
 	}
 
-	respondWithJSON(writer, http.StatusNoContent, nil)
+	writer.WriteHeader(http.StatusNoContent)
 }
 
 func getCleanedBody(text string) string {

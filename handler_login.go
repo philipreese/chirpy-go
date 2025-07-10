@@ -11,11 +11,6 @@ import (
 )
 
 func (cfg *apiConfig) handlerLogin(writer http.ResponseWriter, req *http.Request) {
-	type createLoginRequest struct {
-		Email            string `json:"email"`
-		Password         string `json:"password"`
-	}
-
 	type loginResponse struct {
 		User		
 	    Token        string `json:"token"`
@@ -23,7 +18,7 @@ func (cfg *apiConfig) handlerLogin(writer http.ResponseWriter, req *http.Request
 	}
 
 	decoder := json.NewDecoder(req.Body)
-	var loginRequest createLoginRequest
+	var loginRequest userRequest
 	if err := decoder.Decode(&loginRequest); err != nil {
 		respondWithError(writer, http.StatusInternalServerError, "Couldn't decode parameters: " + err.Error())
 		return
@@ -69,6 +64,7 @@ func (cfg *apiConfig) handlerLogin(writer http.ResponseWriter, req *http.Request
 			CreatedAt: user.CreatedAt,
 			UpdatedAt: user.UpdatedAt,
 			Email: user.Email,
+			IsChirpyRed: user.IsChirpyRed,
 		},
 		Token: tokenString,
 		RefreshToken: refreshToken,

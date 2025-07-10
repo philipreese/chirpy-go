@@ -61,5 +61,5 @@ func (cfg *apiConfig) handlerRevoke(writer http.ResponseWriter, req *http.Reques
 		return
 	}
 
-	respondWithJSON(writer, http.StatusNoContent, nil)
+	writer.WriteHeader(http.StatusNoContent)
 }
