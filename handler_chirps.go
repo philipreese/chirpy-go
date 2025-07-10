@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"net/http"
+	"sort"
 	"strings"
 	"time"
 
@@ -93,6 +94,16 @@ func (cfg *apiConfig) handlerGetChirps(writer http.ResponseWriter, req *http.Req
 		if err != nil {
 			respondWithError(writer, http.StatusInternalServerError, "Couldn't retrieve chirps: " + err.Error())
 			return
+		}
+	}
+
+	// since queries are returned from the database in ASC order, we just look
+	// for "desc" to sort differently in that case
+	if s := req.URL.Query().Get("sort"); s != "" {
+		if s == "desc" {
+			sort.Slice(dbChirps, func(i, j int) bool {
+				return dbChirps[i].CreatedAt.After(dbChirps[j].CreatedAt)
+			})
 		}
 	}
 
