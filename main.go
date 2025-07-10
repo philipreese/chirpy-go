@@ -17,6 +17,7 @@ type apiConfig struct {
 	db             *database.Queries
 	platform       string
 	tokenSecret    string
+	polkaKey       string
 }
 
 func main() {
@@ -79,6 +80,13 @@ func loadConfig() (cfg *apiConfig) {
 	
 	db, err := sql.Open("postgres", dbURL); if err != nil {
 		log.Fatalf("Failed to connect to database: %v", err)
+		return nil
+	}
+
+	polkaKey := os.Getenv("POLKA_KEY")
+	if polkaKey == "" {
+		log.Fatal("POLKA_KEY environment variable is not set")
+		return nil
 	}
 
 	apiCfg := apiConfig{
@@ -86,6 +94,7 @@ func loadConfig() (cfg *apiConfig) {
 		db: database.New(db),
 		platform: platform,
 		tokenSecret: tokenSecret,
+		polkaKey: polkaKey,
 	}
 
 	return &apiCfg

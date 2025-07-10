@@ -1,9 +1,7 @@
 package main
 
 import (
-	"database/sql"
 	"encoding/json"
-	"errors"
 	"net/http"
 	"time"
 
@@ -24,13 +22,6 @@ type User struct {
 type userRequest struct {
 	Email    string `json:"email"`
 	Password string `json:"password"`
-}
-
-type webhookEvent struct {
-	Event string `json:"event"`
-	Data struct {
-		UserID uuid.UUID `json:"user_id"`
-	} `json:"data"`
 }
 
 func (cfg *apiConfig) handlerCreateUser(writer http.ResponseWriter, req *http.Request) {
@@ -109,30 +100,4 @@ func (cfg *apiConfig) handlerUpdateUser(writer http.ResponseWriter, req *http.Re
 		Email: user.Email,
 		IsChirpyRed: user.IsChirpyRed,
 	})
-}
-
-func (cfg *apiConfig) handlerWebhook(writer http.ResponseWriter, req *http.Request) {
-	decoder := json.NewDecoder(req.Body)
-	var webhookEvent webhookEvent
-	if err := decoder.Decode(&webhookEvent); err != nil {
-		respondWithError(writer, http.StatusInternalServerError, "Couldn't decode parameters: " + err.Error())
-		return
-	}
-
-	if webhookEvent.Event != "user.upgraded" {
-		writer.WriteHeader(http.StatusNoContent)
-		return
-	}
-
-	_, err := cfg.db.UpgradeUser(req.Context(), webhookEvent.Data.UserID)
-	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			respondWithError(writer, http.StatusNotFound, "User not found: " + err.Error())
-			return
-		}
-		respondWithError(writer, http.StatusNotFound, "Couldn't update user: " + err.Error())
-		return
-	}
-
-	writer.WriteHeader(http.StatusNoContent)
 }
